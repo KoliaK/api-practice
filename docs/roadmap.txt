@@ -1,0 +1,83 @@
+============================================================
+API FLUENCY ROADMAP
+Goal: Muscle memory for Python 'requests' and JSON handling.
+============================================================
+
+PHASE 1: THE "HAPPY PATH" (Reading Data)
+Focus: GET requests, parsing JSON, lists vs dicts.
+
+[ ] Drill 1.1: The Hello World
+    - URL: https://jsonplaceholder.typicode.com/todos/1
+    - Task: Fetch the data. Print ONLY the "title" of the todo item.
+
+[ ] Drill 1.2: The List Processor
+    - URL: https://jsonplaceholder.typicode.com/todos
+    - Task: Fetch all 200 todos. Loop through them. Count how many are "completed": true. Print the final count.
+
+[ ] Drill 1.3: The Data Miner (Nested JSON)
+    - URL: https://pokeapi.co/api/v2/pokemon/pikachu
+    - Task: This JSON is huge. Find the list of 'abilities'. Print the name of the first ability.
+    - Bonus: Print the name of EVERY game version (version_group_details) Pikachu appears in.
+
+[ ] Drill 1.4: Query Parameters
+    - URL: https://jsonplaceholder.typicode.com/comments
+    - Task: Use the 'params' argument to fetch only comments for 'postId=1'.
+    - Check: The list should have exactly 5 items.
+
+
+PHASE 2: THE INTERACTION (Writing Data & Security)
+Focus: POST, PUT, Headers, and Environment Variables.
+
+[ ] Drill 2.1: The Creator (POST)
+    - URL: https://jsonplaceholder.typicode.com/posts
+    - Task: Create a dictionary with 'title', 'body', and 'userId'. Send it via POST.
+    - Check: Print the response status code (should be 201) and the new ID.
+
+[ ] Drill 2.2: The Editor (PUT vs PATCH)
+    - URL: https://jsonplaceholder.typicode.com/posts/1
+    - Task A: Update the title using PATCH (partial update).
+    - Task B: Replace the whole object using PUT.
+    - Observation: Print the response JSON to see the difference.
+
+[ ] Drill 2.3: The Secure Keeper (Environment Variables)
+    - Setup: Create a .env file with FAKE_TOKEN=my_secret_123.
+    - Task: Write a script that loads this token using os.getenv() and sends it as a Bearer token in the headers to https://httpbin.org/bearer.
+    - Goal: Get a 200 OK without writing the actual token in your Python code.
+
+
+PHASE 3: THE REAL WORLD (Error Handling & Logic)
+Focus: Loops, 404s, Timeouts, and File Saving.
+
+[ ] Drill 3.1: The 404 Handler
+    - Task: Request a user ID that doesn't exist (e.g., /users/9999).
+    - Goal: Write a try/except block that catches the error and prints "User not found" gracefully.
+
+[ ] Drill 3.2: The Timeout Trap
+    - URL: https://httpbin.org/delay/3
+    - Task: Specify 'timeout=1'.
+    - Goal: Catch the 'Timeout' exception and print a custom error message.
+
+[ ] Drill 3.3: The Pagination Loop (Critical Logic)
+    - URL: https://jsonplaceholder.typicode.com/posts
+    - Task: Fetch all 100 posts, but do it in chunks of 20 (simulating pages).
+    - Logic: Use a 'while' loop. params={'_page': i, '_limit': 20}.
+    - Goal: Break the loop when the response is empty.
+
+[ ] Drill 3.4: The Rate Limit Handler (429)
+    - URL: https://httpbin.org/status/429
+    - Task: This URL always returns error 429.
+    - Goal: Write logic that detects status_code == 429, waits for 2 seconds (time.sleep), and prints "Retrying...".
+
+
+PHASE 4: MASTERY (Optimization)
+[ ] Drill 4.1: The Session Manager
+    - Task: Create a requests.Session().
+    - Action: Set a global header 'User-Agent': 'MyStudyScript' on the session.
+    - Test: Make 3 different GET requests using the session object.
+    - Check: Inspect response.request.headers to verify your User-Agent was sent every time.
+
+[ ] Drill 4.2: The Final Boss (User Report)
+    1. Fetch a User from JSONPlaceholder.
+    2. Fetch their Posts.
+    3. Save a summary to a text file.
+    4. MUST use: Environment variables (even if fake), a Session, and a try/except block.

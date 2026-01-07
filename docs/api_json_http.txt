@@ -1,0 +1,326 @@
+Cheat sheet covering the essentials of API integration, JSON handling, and the Python requests library.
+----------------------------------------------------------------------------------------
+
+1. HTTP METHODS
+
+Method,         Action,                     Analogy
+GET,            Retrieve data,              Reading a webpage.
+POST,           Create new data,            Submitting a sign-up form.
+PUT,            Update entire resource,     Replacing a file with a new version.
+PATCH,          Update partial resource,    Changing just the title of a document.
+DELETE,         Remove data,                Deleting a file.
+
+Critical Status Codes
+    2xx (Success)   
+        200 OK: Request succeeded.  
+        201 Created: Resource successfully created (common in POST).    
+    4xx (Client Error - You messed up)  
+        400 Bad Request: Invalid syntax or missing parameters.  
+        401 Unauthorized: Authentication failed (who are you?). 
+        403 Forbidden: Authenticated, but no permission (you can't touch this). 
+        404 Not Found: The URL or resource doesn't exist.   
+    5xx (Server Error - They messed up) 
+        500 Internal Server Error: The server crashed or had an unhandled exception.
+
+----------------------------------------------------------------------------------------
+
+2. JSON in Python (The "Data Format")
+APIs usually speak JSON. Python handles this via the built-in json library to convert text to dictionaries and vice-versa.
+
+----------------------------------------------------------------------------------------
+
+import json
+
+data = {"name": "Alice", "role": "Dev", "active": True}
+json_string = '{"name": "Bob", "role": "Manager", "active": false}'
+
+# 1. Serialization (Python -> JSON String)
+# Used when preparing data to SEND to an API (if not using requests' auto-handling)
+payload = json.dumps(data) 
+
+# 2. Deserialization (JSON String -> Python)
+# Used when parsing raw text received FROM an API
+user_dict = json.loads(json_string) 
+print(user_dict["role"]) # Output: Manager
+
+----------------------------------------------------------------------------------------
+
+3. The requests Library (The "Tool")
+Install it first: pip install requests
+
+Basic GET Request
+Retrieving data with query parameters (e.g., ?page=2&sort=asc).
+
+----------------------------------------------------------------------------------------
+
+import requests
+
+url = "https://api.example.com/items"
+params = {"page": 2, "category": "books"} # Python dict automagically becomes URL params
+
+response = requests.get(url, params=params)
+
+# Check if request worked
+if response.status_code == 200:
+    data = response.json() # Parse JSON response directly into a dictionary
+    print(data)
+
+----------------------------------------------------------------------------------------
+
+Basic POST Request
+Sending data to the server.
+
+----------------------------------------------------------------------------------------
+
+url = "https://api.example.com/users"
+new_user = {"username": "neo", "email": "neo@matrix.com"}
+
+# usage of 'json=' automatically sets header 'Content-Type: application/json'
+# and serializes the dictionary for you.
+response = requests.post(url, json=new_user) 
+
+print(response.status_code) # Should be 201
+print(response.json()) # Usually returns the created object with ID
+
+----------------------------------------------------------------------------------------
+
+Authentication (Headers)
+Most APIs require a token to prove who you are.
+
+----------------------------------------------------------------------------------------
+
+url = "https://api.example.com/secure-data"
+token = "YOUR_SECRET_API_KEY"
+
+# Standard Bearer Token pattern
+headers = {
+    "Authorization": f"Bearer {token}",
+    "User-Agent": "MyApp/1.0" # Good practice to identify your script
+}
+
+response = requests.get(url, headers=headers)
+
+----------------------------------------------------------------------------------------
+
+4. Professional Error Handling pattern
+Do not assume every request works. This is the robust "try/except" block for production code.
+
+----------------------------------------------------------------------------------------
+
+import requests
+from requests.exceptions import HTTPError, Timeout
+
+try:
+    response = requests.get("https://api.example.com/data", timeout=5) # Always set timeout!
+    
+    # Raises an HTTPError if the status is 4xx or 5xx
+    response.raise_for_status() 
+    
+    data = response.json()
+    print("Success:", data)
+
+except HTTPError as http_err:
+    print(f"HTTP error occurred: {http_err}") # e.g., 404 Not Found
+except Timeout:
+    print("The request timed out")
+except Exception as err:
+    print(f"An error occurred: {err}")
+
+----------------------------------------------------------------------------------------
+
+Quick Reference: params vs data vs json
+    params=: Adds key/values to the URL (e.g., ?search=term). Used mostly in GET.
+
+    json=: Adds a dictionary to the Body as JSON. Used in POST/PUT.
+
+    data=: Adds form-encoded data (like an HTML <form>). Used less often for modern REST APIs.
+
+----------------------------------------------------------------------------------------
+
+To WRITE (save) data from an API into a local JSON file, you use the json.dump() method (note the lack of an s at the end).
+
+Here is the pattern for Fetching → Formatting → Saving.
+
+----------------------------------------------------------------------------------------
+
+import requests
+import json
+
+# 1. Fetch the data from the API
+url = "https://jsonplaceholder.typicode.com/users"
+response = requests.get(url)
+
+if response.status_code == 200:
+    data = response.json() # Convert API response to a Python list/dict
+
+    # 2. Write that data to a local file
+    # 'w' = write mode
+    # encoding='utf-8' = essential for special characters (accents, emojis)
+    with open("users_data.json", "w", encoding="utf-8") as file:
+        json.dump(data, file, indent=4, ensure_ascii=False)
+    
+    print("Data successfully saved to users_data.json")
+
+else:
+    print(f"Failed to fetch data: {response.status_code}")
+
+----------------------------------------------------------------------------------------
+
+Key Arguments in json.dump()
+    data: The Python dictionary or list you want to save.
+
+    file: The file object created by open().
+
+    indent=4: This is crucial for readability. Without it, your JSON file will be one massive, unreadable single line of text. This adds indentation (pretty-printing).
+
+    ensure_ascii=False: By default, Python escapes non-ASCII characters (e.g., "São Paulo" becomes "S\u00e3o Paulo"). Setting this to False keeps the actual characters readable in the file.
+
+----------------------------------------------------------------------------------------
+
+Summary: dump vs dumps
+It is easy to mix these up:
+
+Method,         Mnemonic,       Usage
+json.dump(),    Dump to Drive,  Writes JSON directly to a file.
+json.dumps(),   Dump to String, Converts data to a string (in memory) 
+                                so you can print or log it.
+
+----------------------------------------------------------------------------------------
+
+To READ (pull data) from the JSON file.
+
+----------------------------------------------------------------------------------------
+
+import json
+
+try:
+    # 1. Open the file in 'read' mode ('r')
+    with open("users_data.json", "r", encoding="utf-8") as file:
+        
+        # 2. Parse the file content directly into a Python object
+        loaded_data = json.load(file)
+
+    # Now you can work with it like normal Python data
+    # (Assuming the file contained a list of users)
+    print(f"Total users loaded: {len(loaded_data)}")
+    print(f"First user's name: {loaded_data[0]['name']}")
+
+except FileNotFoundError:
+    print("Error: The file 'users_data.json' was not found.")
+except json.JSONDecodeError:
+    print("Error: The file contains invalid JSON (maybe it's empty or corrupt).")
+
+----------------------------------------------------------------------------------------
+
+Key Differences: load vs loads
+Just like with writing, there is a distinction between working with files and working with memory strings.  
+
+Method,         Mnemonic,           Usage
+json.load(),    Load from Drive,    Reads directly from a file object opened with open().
+json.loads(),   Load from String,   Reads from a string variable you already have in memory.
+
+When to use which?
+Use json.load() when you have a config file (config.json) or a saved dataset on your hard drive that your script needs to start up.
+
+Use json.loads() when you receive data over the network (like a websocket message or a raw string from a database) that isn't saved in a file.
+
+----------------------------------------------------------------------------------------
+
+5. Security: Storing Keys Safely
+Never hardcode API keys in your script. Use Environment Variables.
+
+Setup: Create a .env file in your folder:
+
+----------------------------------------------------------------------------------------
+
+API_KEY=12345secret
+DB_PASSWORD=supersecure
+
+----------------------------------------------------------------------------------------
+
+import os
+from dotenv import load_dotenv # pip install python-dotenv
+
+load_dotenv() # Loads variables from .env file
+
+api_key = os.getenv("API_KEY") # Returns None if not found, instead of crashing
+
+----------------------------------------------------------------------------------------
+
+6. Performance: Using Session
+If you are making multiple requests to the same host (e.g., getting details for 50 different users), don't use requests.get(). Use a Session.
+
+    Why? It keeps the connection open (Keep-Alive), significantly speeding up subsequent requests.
+
+    Bonus: You can set headers (like auth tokens) once for the whole session.
+
+----------------------------------------------------------------------------------------
+
+s = requests.Session()
+s.headers.update({"Authorization": "Bearer MY_TOKEN"})
+
+# Both requests reuse the same connection and headers
+response_1 = s.get("https://api.example.com/users/1")
+response_2 = s.get("https://api.example.com/users/2")
+
+----------------------------------------------------------------------------------------
+
+7. Common Pattern: Handling Pagination
+Most APIs won't give you 10,000 results in one go. They give you "pages". Here is the standard pattern to loop through them.
+
+----------------------------------------------------------------------------------------
+
+users = []
+url = "https://api.example.com/users"
+params = {"page": 1, "per_page": 100}
+
+while True:
+    response = requests.get(url, params=params)
+    data = response.json()
+    
+    # Add this page's results to our main list
+    users.extend(data['results'])
+    
+    # Check if there is a next page (Logic varies by API)
+    if data['has_more'] == False:
+        break
+        
+    params["page"] += 1 # Move to next page
+    
+print(f"Total users collected: {len(users)}")
+
+----------------------------------------------------------------------------------------
+
+8. Debugging: Inspecting the Request
+Sometimes the server says 400 Bad Request but you swear your code is perfect. You need to see exactly what requests sent.
+
+----------------------------------------------------------------------------------------
+
+response = requests.post("https://api.example.com/post", json={"key": "value"})
+
+# Inspect what you actually sent
+print(response.request.url)    # The final URL
+print(response.request.headers) # The headers sent
+print(response.request.body)    # The raw bytes sent
+
+# Inspect what you got back (beyond just .json())
+print(response.headers)         # Server headers (rate limits often hide here!)
+print(response.elapsed)         # How long the request took
+
+----------------------------------------------------------------------------------------
+
+9. Handling Rate Limits (429)
+If you hit the API too fast, you get a 429 Too Many Requests. The polite (and required) thing to do is sleep.
+
+----------------------------------------------------------------------------------------
+
+import time
+
+response = requests.get(url)
+
+if response.status_code == 429:
+    # APIs usually send a header telling you how long to wait
+    retry_after = int(response.headers.get("Retry-After", 60))
+    print(f"Hit rate limit. Sleeping for {retry_after} seconds...")
+    time.sleep(retry_after)
+    # Then retry the request...
