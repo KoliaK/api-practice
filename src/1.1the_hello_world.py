@@ -101,7 +101,7 @@ try:
 
     data = response.json()
 
-    print(data.get('address', {}).get('geo', {}).get('lat', 'Latitude not found'))
+    # print(data.get('address', {}).get('geo', {}).get('lat', 'Latitude not found'))
 
 except requests.exceptions.RequestException as e:
     print(f'API request failed: {e}')
