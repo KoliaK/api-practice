@@ -61,8 +61,8 @@ try:
     # print(data['company']['name'])
     
     # with get() method (safer)
-    print(data.get('company', {}).get('name', 'No company name found'))
-    
+    # print(data.get('company', {}).get('name', 'No company name found'))
+
     # NOTE: when chaining .get() the default
     # value for the parent must be an
     # empty dict {}, not a string.
@@ -73,4 +73,36 @@ except requests.exceptions.RequestException as e:
     print(f'API Request failed: {e}')
     # an exit code of 0 means success
     # 1 means failure or error occurred
+    sys.exit(1)
+
+# DEEP NESTING
+'''
+Endpoint: 
+https://jsonplaceholder.typicode.com/users/1
+
+Action: 
+Fetch the user data.
+
+Target: 
+We need the user's Latitude.
+
+Hint: 
+The JSON structure is address -> geo -> lat.
+
+Requirement: 
+Use the safe chaining method we just discussed (.get().get().get()) to print the latitude.
+'''
+
+url = 'https://jsonplaceholder.typicode.com/users/1'
+
+try:
+    response = requests.get(url, timeout=5)
+    response.raise_for_status()
+
+    data = response.json()
+
+    print(data.get('address', {}).get('geo', {}).get('lat', 'Latitude not found'))
+
+except requests.exceptions.RequestException as e:
+    print(f'API request failed: {e}')
     sys.exit(1)
